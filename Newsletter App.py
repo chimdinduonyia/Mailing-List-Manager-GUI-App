@@ -48,7 +48,10 @@ def update_recipients():
     global active_sheet
     global recipient_field
 
+    #Get these 3 details from the worksheet
     to, subject, body = get_mails(active_sheet)
+
+    #Populate the recipients field with the recipient emails. Delete and Insert updated list
     recipient_field.delete(0, END)
     recipient_field.insert(0, to)
 
