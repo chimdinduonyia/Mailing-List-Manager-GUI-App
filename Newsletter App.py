@@ -26,9 +26,36 @@ ready = False
 
 # -----------------------------------------------------------------------------Functions
 
+# This function gets the e-mail addresses in a mailing list and casts them to a list of recipients
+
+
+def get_mails(work_sheet):
+    recipients = []
+    for column in work_sheet.iter_cols(min_row=2, min_col=5, values_only=True):
+        for address in column:
+            recipient = address
+            recipients.append(recipient)
+    # This joins all the addresses with a comma and casts them to a cc variable that will be the recipient field of the e-mail
+    cc = ",".join(recipients)
+
+    # Accept the subject and body values
+    subject = subject_field.get()
+    body = body_field.get("1.0", END)
+
+    return cc, subject, body
+
+#Function to populate the recipients section
+def update_recipients():
+
+    global active_sheet
+    global recipient_field
+
+    to, subject, body = get_mails(active_sheet)
+    recipient_field.delete(0, END)
+    recipient_field.insert(0, to)
+
+
 # New File Button Function
-
-
 def new_file():
     global xl_filename
     global new_file
@@ -48,7 +75,7 @@ def new_file():
         ("Excel Spreadsheet", "*.xlsx"),
     )
     xl_filename = fd.asksaveasfilename(
-        initialfile="Untitled.xlsx", initialdir="C://Users/USER/Documents/PYTHON PROJECTS/Mailing Lists", defaultextension=".xlsx", filetypes=filetypes)
+        initialfile="Untitled.xlsx", initialdir="./Mailing Lists", defaultextension=".xlsx", filetypes=filetypes)
     # Check if nothing was returned i.e user chose to cancel and set filename back to default ""
     if xl_filename == None:
         xl_filename = ""
@@ -62,9 +89,14 @@ def new_file():
                          current_list, anchor=CENTER)
         ml_label.grid(row=0, column=0, columnspan=2, sticky=W+E)
 
+# Generator function that keeps track of row s/n: selects first column (S/N) and yields all the integers in that column
+def track_row():
+    global active_sheet
+    
+    for row in active_sheet.iter_rows(min_row=2, values_only=True, max_col=1):
+        yield row[0]
+
 # Function to execute when the save button is clicked
-
-
 def save_row(work_sheet):
     # Variables
     global workbook
@@ -73,7 +105,6 @@ def save_row(work_sheet):
     global phone_field
     global mail_field
     global save_label
-    # Generator function that keeps track of row s/n: selects first column (S/N) and yields all the integers in that column
 
     # Get input at Entries and Validate that they are formatted properly
     surname = sur_field.get()
@@ -89,10 +120,10 @@ def save_row(work_sheet):
             if work_sheet["A2"].value:
                 # If not, check to see the S/N of the last row, What is the highest row number in the spreadsheet?
                 last_row = max(track_row())
-                new_row = str(last_row + 2)
+                new_row = str(int(last_row) + 2)
                 # Fix values in the rows after that
                 # Enter row number
-                work_sheet["A" + new_row] = str(last_row + 1)
+                work_sheet["A" + new_row] = str(int(last_row) + 1)
                 work_sheet["B" + new_row] = surname
                 work_sheet["C" + new_row] = firstname
                 work_sheet["D" + new_row] = phone_number
@@ -128,9 +159,9 @@ def save_row(work_sheet):
         save_label.grid(row=5, column=0, columnspan=2, sticky=W+E)
         recipient_form.after(2000, lambda: save_label.destroy())
 
+    update_recipients()
+
 # Function to open an already created work_book
-
-
 def open_file():
     global xl_filename
     global active_sheet
@@ -157,24 +188,10 @@ def open_file():
     else:
         pass
 
+    update_recipients()
+
 # -----------------------------------------------------------------E-mailing functionality
-# This function gets the e-mail addresses in a mailing list and casts them to a list of recipients
 
-
-def get_mails(work_sheet):
-    recipients = []
-    for column in work_sheet.iter_cols(min_row=2, min_col=5, values_only=True):
-        for address in column:
-            recipient = address
-            recipients.append(recipient)
-    # This joins all the addresses with a comma and casts them to a cc variable that will be the recipient field of the e-mail
-    cc = ",".join(recipients)
-
-    # Accept the subject and body values
-    subject = subject_field.get()
-    body = body_field.get("1.0", END)
-
-    return cc, subject, body
 
 
 def get_id_pass():
@@ -199,6 +216,7 @@ def get_id_pass():
     submit_btn.grid(row=2, column=1, sticky="W", padx=5, pady=5)
 
 
+
 def submit():
     global user_id
     global user_pass
@@ -209,6 +227,7 @@ def submit():
     global subject_field
     global body_field
     global frame_2
+    global recipient_field
 
     email_user = user_id.get()
     email_pass = user_pass.get()
@@ -241,7 +260,7 @@ def submit():
             msg = MIMEMultipart()
             msg['Subject'] = subject
             msg['From'] = email_user  # email_user
-            msg['To'] = to
+            msg['To'] = recipient_field.get()
             # Add body text to mail
             txt = MIMEText(body)
             msg.attach(txt)
@@ -353,16 +372,21 @@ frame_2 = LabelFrame(compose_frame, text="Attachments")
 frame_2.grid(row=1, column=0, padx=10, sticky=W+E)
 frame_3 = Frame(compose_frame)
 frame_3.grid(row=2, column=0, padx=10, sticky=W+E)
+# Recipients Field
+recipient_label = Label(frame_1, text="Recipient(s): ")
+recipient_label.grid(row=1, column=0, padx=5, sticky="W")
+recipient_field = Entry(frame_1, bd=3, width=50)
+recipient_field.grid(row=2, column=0, padx=5, sticky=W+E, pady=(5, 20))
 # Subject Field
 subject_label = Label(frame_1, text="Subject: ")
-subject_label.grid(row=1, column=0, padx=5, sticky="W")
+subject_label.grid(row=3, column=0, padx=5, sticky="W")
 subject_field = Entry(frame_1, bd=3, width=50)
-subject_field.grid(row=2, column=0, padx=5, sticky=W+E, pady=(5, 20))
+subject_field.grid(row=4, column=0, padx=5, sticky=W+E, pady=(5, 20))
 # Body Field
 body_label = Label(frame_1, text="Body: ")
-body_label.grid(row=3, column=0, padx=5, sticky="W")
+body_label.grid(row=5, column=0, padx=5, sticky="W")
 body_field = Text(frame_1, bd=3, width=50, height=10)
-body_field.grid(row=4, column=0, padx=5, sticky=W+E, pady=(5, 0))
+body_field.grid(row=6, column=0, padx=5, sticky=W+E, pady=(5, 0))
 # Attach and Send Buttons
 attach = Button(frame_3, text="Attach File(s)", bg="#2e6930",
                 fg="#fff", command=attach_files)
