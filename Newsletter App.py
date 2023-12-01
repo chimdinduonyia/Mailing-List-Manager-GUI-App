@@ -27,8 +27,6 @@ ready = False
 # -----------------------------------------------------------------------------Functions
 
 # This function gets the e-mail addresses in a mailing list and casts them to a list of recipients
-
-
 def get_mails(work_sheet):
     recipients = []
     for column in work_sheet.iter_cols(min_row=2, min_col=5, values_only=True):
